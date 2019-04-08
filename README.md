@@ -1,6 +1,63 @@
 # AKS Workshop Notes
 Proctor notes for The Azure Kubernetes Workshop, https://aksworkshop.io, supplemental to the workshop documentation.
 
+<!-- TOC -->
+
+- [AKS Workshop Notes](#aks-workshop-notes)
+  - [1.1 Prerequisites](#11-prerequisites)
+    - [Azure subscription](#azure-subscription)
+      - [Solution notes](#solution-notes)
+  - [1.2 Kubernetes basics](#12-kubernetes-basics)
+  - [1.3 Application Overview](#13-application-overview)
+  - [1.4 Scoring](#14-scoring)
+  - [1.5 Tasks](#15-tasks)
+- [2 Getting up and running](#2-getting-up-and-running)
+  - [2.1 Deploy Kubernetes with Azure Kubernetes Service (AKS)](#21-deploy-kubernetes-with-azure-kubernetes-service-aks)
+    - [Concepts](#concepts)
+    - [Solution notes](#solution-notes-1)
+    - [Tips](#tips)
+  - [2.2. Deploy MongoDB](#22-deploy-mongodb)
+    - [Concepts](#concepts-1)
+    - [In Hints](#in-hints)
+    - [Tips](#tips-1)
+    - [Notes](#notes)
+  - [2.3 Deploy the Order Capture API](#23-deploy-the-order-capture-api)
+    - [Concepts](#concepts-2)
+    - [Tasks](#tasks)
+    - [Tips](#tips-2)
+  - [2.4 Deploy the frontend using Ingress](#24-deploy-the-frontend-using-ingress)
+    - [Concepts](#concepts-3)
+    - [Tasks](#tasks-1)
+  - [2.5 Monitoring](#25-monitoring)
+    - [Concepts](#concepts-4)
+    - [Tasks](#tasks-2)
+    - [Tips](#tips-3)
+    - [Resources](#resources)
+  - [2.6 Scaling](#26-scaling)
+    - [Concepts](#concepts-5)
+    - [Tasks](#tasks-3)
+    - [Tips](#tips-4)
+    - [Resources](#resources-1)
+  - [2.7 Create private highly available container registry](#27-create-private-highly-available-container-registry)
+    - [Concepts](#concepts-6)
+    - [Tasks](#tasks-4)
+    - [Tips](#tips-5)
+    - [Resources](#resources-2)
+- [DevOps Tasks](#devops-tasks)
+  - [3.1 Continuous Integration and Continuous Delivery](#31-continuous-integration-and-continuous-delivery)
+    - [Concepts](#concepts-7)
+    - [Tasks](#tasks-5)
+    - [Tips](#tips-6)
+    - [Resources](#resources-3)
+  - [3.2 Package your app with Helm](#32-package-your-app-with-helm)
+    - [Concepts](#concepts-8)
+    - [Tasks](#tasks-6)
+    - [Tips](#tips-7)
+    - [Resources](#resources-4)
+- [Misc Notes](#misc-notes)
+
+<!-- /TOC -->
+
 ## 1.1 Prerequisites
 
 ### Azure subscription
@@ -64,6 +121,7 @@ Optional, at the discretion of the Emcee. More practical when there is one or mo
 1. Create a `aksworkshop` directory in your home dir (`~/`). Store code files here, e.g. K8s manifests.
 1. Add env vars to `.bashrc`.
 1. Add `alias k=kubectl` to `.bashrc`.
+1. In Azure Shell use the `code` command to open a user-friendly  editor directly in Azure Shell (or use `vi` or `nano`, if you prefer).
 
 ## 2.2. Deploy MongoDB
 
@@ -235,7 +293,7 @@ Coming soon
 - Another lab: <https://github.com/Azure/kubernetes-hackfest/blob/master/labs/monitoring-logging/README.md>
 - <https://kubernetes.io/docs/tasks/debug-application-cluster/resource-usage-monitoring/>
 
-## 2.5 Scaling
+## 2.6 Scaling
 
 ### Concepts
 
@@ -243,18 +301,137 @@ Coming soon
 
 ### Tasks
 
-Straight forward. My az command: 
+- Run a baseline load test. Straight forward. My az command: 
 
-```
-az container create -g $RGNAME -n loadtest --image azch/loadtest --restart-policy Never -e SERVICE_IP=40.121.XXX.XXX
-```
-```
-az container logs -g $RGNAME -n loadtest
-```
-```
-az container delete -g $RGNAME -n loadtest
-```
+    ```
+    az container create -g $RGNAME -n loadtest --image azch/loadtest --restart-policy Never -e SERVICE_IP=40.121.XXX.XXX
+    ```
+    ```
+    az container logs -g $RGNAME -n loadtest
+    ```
+    ```
+    az container delete -g $RGNAME -n loadtest
+    ```
+- Create Horizontal Pod Autoscaler.
+  - The **Important** note in the solution requires edits to captureorder-deployment.yaml to remove the explicit `replicas: 2` count. There is also an instruction to define resource requests and resource limits. This is included in `captureorder-deployment.yaml`:
+  ```
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+  ```
+  This requirement is mentioned in <https://docs.microsoft.com/en-us/azure/aks/tutorial-kubernetes-scale>. 
+  
 
+- Run a load test again after applying Horizontal Pod Autoscaler
+  - Typo in `kubectl get pods -l`. Remove the `-l`. 
+  - I recommend `kubectl get pods --watch`
+  - Run `az container logs -g akschallenge -n loadtest`
+  - After the load test ends, observe that the # of pods scales back down to 1.
+- Check if your cluster nodes needs to scale/auto-scale
+  - `az aks` command is given to scale cluster.
+  - Important question is, "how do I know if I need more nodes?" 
+
+
+### Tips
+
+1. Run `k get deploy` to observe deployment resources:
+    ```
+    NAME                   DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+    captureorder           2         2         2            2           46h
+    frontend               1         1         1            1           111m
+    orders-mongo-mongodb   1         1         1            1           46h
+    ```
+
+### Resources
+
+1. Another good resource is <https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/>. When you use the `az aks scale` command to scale down, AKS safely drains your nodes.
+
+## 2.7 Create private highly available container registry
+
+### Concepts
+
+- Docker Image
+- Azure Container Registry
+
+### Tasks
+
+- Create an Azure Container Registry (ACR)
+  - Use Basic sku
+- Use Azure Container Registry Build to push the container images to your new registry
+  - `az acr login` can't be done from Azure shell. This command is only used if you are not using Azure shell.
+  ```
+  This command requires running the docker daemon, which is not supported in Azure Cloud Shell.
+  ```
+  - You can run `az acr build` from Azure shell, however.
+  - This will take several minutes to complete. Note the following lines in the terminal output:
+    ```
+    - image:
+    registry: <your unique reg name>.azurecr.io
+    repository: captureorder
+    tag: ca
+    ```
+    These will be used in the next step.
+  - Explore the new ACR resource in Azure Portal.
+- Configure your application to pull from your private registry
+  - Grant AKS generated Service Principal to ACR
+  - Create a Kubernetes Secret
+- Now run `k apply -f captureorder-deployment.yaml`
+  - Run `k get po --watch` to observe the captureorder pod restarting:
+  ```
+  michael@Azure:~/aksworkshop$ k get po --watch
+    NAME                                    READY   STATUS    RESTARTS   AGE
+    captureorder-57dc6cb5f6-w8bxd           0/1     Running   0          13s
+    captureorder-69fd98b57b-d26vd           1/1     Running   0          3h51m
+    frontend-55cf957d85-fx4l7               1/1     Running   0          3h14m
+    orders-mongo-mongodb-6684cbf59f-wd49s   1/1     Running   0          3h56m
+    captureorder-57dc6cb5f6-w8bxd   1/1   Running   0     15s
+    captureorder-69fd98b57b-d26vd   1/1   Terminating   0     3h51m
+    captureorder-69fd98b57b-d26vd   0/1   Terminating   0     3h51m
+  ```
+  - Run `k describe po captureorder-57dc6cb5f6-w8bxd` to confirm the use of the image in ACR:
+  ```
+  Image:          acrmike20190405.azurecr.io/captureorder:ca1
+  ```
+
+### Tips
+
+Pending
+
+### Resources
+
+Pending
+
+# DevOps Tasks
+
+## 3.1 Continuous Integration and Continuous Delivery
+
+### Concepts
+
+- CI/CD
+- Azure DevOps
+- Azure DevOps Project
+
+### Tasks
+
+- Create an Azure DevOps account
+- Create a project
+- Fork the source repositories on GitHub or import them to Azure Repos
+- Create build pipeline for the application Docker container
+  - The azure-pipelines.yml file is in the git repo, but its contents differ from the solution in the lab. Overwrite the repo file.
+- Build the code in azch-captureorder as a Docker image and push it to the Azure Container Registry you provisioned before
+  - The "Set up build" button may not appear in your screen. Navigate to Build pipelines from the left navigation menu.
+  - Click on the "Use the classic editor" link at the bottom of the "Where is your code?" list
+  - When adding Variables, in lieu of a service principal, you can  enable the **Admin user** in the ACR **Access keys** blade in Azure Portal.
+- Create a new Azure DevOps Repo, for example azch-captureorder-kubernetes to hold the YAML configuration for Kubernetes
+- Create build pipeline for the Kubernetes config files
+- Create a continuous deployment pipeline
+  - May need to show how to create an **Empty job**.
+  - May need to show how to enable the continuous deployment trigger.
+- Verify everything works
 
 ### Tips
 
@@ -262,8 +439,33 @@ Coming soon
 
 ### Resources
 
+## 3.2 Package your app with Helm
 
-## Misc Notes
+### Concepts
+
+- Helm
+
+### Tasks
+
+- Package your app as a Helm chart
+  - `helm init` Or `helm version` to check if helm is running
+- Reconfigure the build pipeline for `azch-captureorder-kubernetes`
+  - Change from `yaml` to `helm`. Remember to change this back to test from a yaml update.
+- Deploying it again using Helm
+
+The tasks are pretty straight forward.
+
+### Tips
+
+Pending
+
+### Resources
+
+1. https://hub.helm.sh/
+2. Another lab <https://github.com/Azure/kubernetes-hackfest>
+3. <https://www.katacoda.com/courses/kubernetes/helm-package-manager>
+
+# Misc Notes
 
 1. On trying to review live container logs for frontend container:
     ```
