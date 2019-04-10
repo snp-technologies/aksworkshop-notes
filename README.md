@@ -366,7 +366,7 @@ Coming soon
   ```
   This command requires running the docker daemon, which is not supported in Azure Cloud Shell.
   ```
-  - You can run `az acr build` from Azure shell, however.
+  - You can run `az acr build` from Azure shell, however...
   - This will take several minutes to complete. Note the following lines in the terminal output:
     ```
     - image:
@@ -375,6 +375,14 @@ Coming soon
     tag: ca
     ```
     These will be used in the next step.
+  - If you are running the `az acr build` command in a terminal (not Azure Shell), you may get the following error:
+    ```
+    Some of the properties of 'buildRequest' are invalid. InnerErrors: QuickBuildRequest:Image name 'captureorder:{{.Run.ID}}' is invalid. \nThe acceptable patterns are 'repository' or 'repository:tag'.The repository and tag names follow the standardized docker repository and tag naming conventions. Accepted tag templates are '{{.Build.ID}},{{.Build.Date}}'
+    ```
+    If so, try this command instread:
+    ```
+    az acr build -t "captureorder:{{.Build.ID}}" -r <unique-acr-name> .
+    ```
   - Explore the new ACR resource in Azure Portal.
 - Configure your application to pull from your private registry
   - Grant AKS generated Service Principal to ACR
