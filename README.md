@@ -217,7 +217,7 @@ https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-read
 ### Tasks
 
 - Provision the captureorder deployment and expose a public endpoint
-    - Straight forward
+    - Straight forward, but DON'T FORGET TO ENTER YOUR ENVIRONMENT VARIABLES IN `captureorder-deployment.yaml`!!
 - Ensure orders are successfully written to MongoDB
     - The curl solution is not obvious. Let’s break it down 
 
