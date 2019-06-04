@@ -49,7 +49,7 @@ Proctor notes for The Azure Kubernetes Workshop, https://aksworkshop.io, supplem
     - [Tasks](#tasks-5)
     - [Tips](#tips-6)
     - [Resources](#resources-3)
-  - [3.2 Package your app with Helm](#32-package-your-app-with-helm)
+  - [3.2 Package your app with Helm (DEPRECATED)](#32-package-your-app-with-helm-deprecated)
     - [Concepts](#concepts-8)
     - [Tasks](#tasks-6)
     - [Tips](#tips-7)
@@ -104,6 +104,8 @@ Optional, at the discretion of the Emcee. More practical when there is one or mo
 - Visit https://docs.microsoft.com/en-us/azure/aks/kubernetes-walkthrough for step by step
 - Note that solution uses Azure CLI. Use Azure Shell or install the Azure CLI. PowerShell is an alternative.
 
+> Do not install with the cluster autoscaler preview, i.e. VMSSPreview. It takes longer to install and may  increase the liklihood of cluster failure during the workshop.
+
 |Step|Method|
 |--|--|
 |SSH Key|If using your own Azure subscription, you can use your own SSH key, and not use the `--generate-ssh-keys` option in the `az create aks` command. Instead, use the `--ssh-key-value /path` option.|
@@ -119,9 +121,9 @@ Optional, at the discretion of the Emcee. More practical when there is one or mo
 ### Tips
 
 1. Create a `aksworkshop` directory in your home dir (`~/`). Store code files here, e.g. K8s manifests.
-1. Add env vars to `.bashrc`.
-1. Add `alias k=kubectl` to `.bashrc`.
-1. In Azure Shell use the `code` command to open a user-friendly  editor directly in Azure Shell (or use `vi` or `nano`, if you prefer).
+2. Add env vars to `.bashrc`.
+3. Add `alias k=kubectl` to `.bashrc`.
+4. In Azure Shell use the `code` command to open a user-friendly  editor directly in Azure Shell (or use `vi` or `nano`, if you prefer).
 
 ## 2.2. Deploy MongoDB
 
@@ -142,7 +144,7 @@ https://github.com/helm/charts/blob/master/stable/mongodb/templates/secrets.yaml
 2. How does creating a standalone username/password and database help?
 Note, if a database does not exist, MongoDB creates the database when you first store data for that database.
 3. Why refer to this as a “standalone”? Why not use the language from the values file, “MongoDB custom user and database”. standalone is used in the helm chart, but not specifically where a custom database is defined. (Search on mongodbDatabase in https://github.com/helm/charts/blob/master/stable/mongodb/templates/deployment-standalone.yaml.)
-4. Why use **stable.mongo** and not **mongodb-replicaset** as the Helm chart?
+4. Why use **stable.mongo** and not **mongodb-replicaset** as the Helm chart? See <https://github.com/helm/charts/issues/13186>.
 
 ### Tips
 
@@ -179,11 +181,26 @@ https://resources.azure.com/subscriptions/[SUBSCRIPTIONID]/resourceGroups/[RGNAM
     Then, the tiller pod is not ready. Give it some more time. Check with `helm version`.
 
 1. Verify Mongo by: 
+- run `kubectl get po` to validate that the pod is running. You should get a results like:
+```
+NAME                                    READY   STATUS    RESTARTS   AGE
+orders-mongo-mongodb-76c879dbc7-p2vlc   1/1     Running   0          7m36s
+```
 - Get a shell to the running Container, e.g. 
 ```
-kubectl exec -it orders-mongo-mongodb-6684cbf59f-5rwq2 -- /bin/bash
+kubectl exec -it orders-mongo-mongodb-76c879dbc7-p2vlc -- /bin/bash
 ```
-Once in the shell, run `service mongod status`
+- Once in the shell, run `mongo`. You should get output like:
+
+```
+MongoDB shell version v4.0.3
+connecting to: mongodb://127.0.0.1:27017
+Implicit session: session { "id" : UUID("d2b7fba4-51ca-4115-b02c-388a2568fa4d") }
+MongoDB server version: 4.0.3
+Welcome to the MongoDB shell.
+For interactive help, type "help".
+<and so on>
+```
 
 ### Notes
 
@@ -443,11 +460,13 @@ Pending
 
 ### Tips
 
-Coming soon
+- To enable the Environments feature in Azure DevOps, turn on the **Multi-stage pipelines** Preview feature. This is mentioned later in the instructions, but it needs to be done first.
+- In Azure Shell, you can see the new pods running in the `dev` namespace using `kubectl get po -n dev`. Likewise, you can see the deployment from `kubectl get deploy -n dev`.
+
 
 ### Resources
 
-## 3.2 Package your app with Helm
+## 3.2 Package your app with Helm (DEPRECATED)
 
 ### Concepts
 
