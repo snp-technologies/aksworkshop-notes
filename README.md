@@ -110,7 +110,7 @@ Optional, at the discretion of the Emcee. More practical when there is one or mo
 |--|--|
 |SSH Key|If using your own Azure subscription, you can use your own SSH key, and not use the `--generate-ssh-keys` option in the `az create aks` command. Instead, use the `--ssh-key-value /path` option.|
 |Set env variables used in the lab|Resource Group, Location, Cluster name|
-|Create resource group|`az group create --name $RGNAME --location $LOCATION` // NOTE: If you have been given access to a subscription as part of a lab, an RG has probably been provisioned. You will see this in Azure Portal. If so, use this RG. Note the location of the RG.|
+|Create resource group|`az group create --name $RGNAME --location $LOCATION` **IMPORTANT**: If you have been given access to a subscription as part of a lab, an RG has probably been provisioned (e.g. ODL-k8s-68593). You will see this in Azure Portal. If so, use this RG. Note the location of the RG.|
 |Get V8s versions for my region|az aks get-versions --location $LOCATION -o table|
 |Create AKS cluster|`az aks create --resource-group $RGNAME --name  $CLUSTERNAME --enable-addons monitoring --kubernetes-version 1.12.6 --generate-ssh-keys --location $LOCATION --service-principal $APPID --client-secret $CLIENTSECRET`|
 |Get Cluster creds|`az aks get-credentials -g $RGNAME -n $CLUSTERNAME`|
