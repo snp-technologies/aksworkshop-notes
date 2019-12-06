@@ -5,8 +5,6 @@ Proctor notes for The Azure Kubernetes Workshop, https://aksworkshop.io, supplem
 
 - [AKS Workshop Notes](#aks-workshop-notes)
   - [1.1 Prerequisites](#11-prerequisites)
-    - [Azure subscription](#azure-subscription)
-      - [Solution notes](#solution-notes)
   - [1.2 Kubernetes basics](#12-kubernetes-basics)
   - [1.3 Application Overview](#13-application-overview)
   - [1.4 Scoring](#14-scoring)
@@ -14,7 +12,7 @@ Proctor notes for The Azure Kubernetes Workshop, https://aksworkshop.io, supplem
 - [2 Getting up and running](#2-getting-up-and-running)
   - [2.1 Deploy Kubernetes with Azure Kubernetes Service (AKS)](#21-deploy-kubernetes-with-azure-kubernetes-service-aks)
     - [Concepts](#concepts)
-    - [Solution notes](#solution-notes-1)
+    - [Solution notes](#solution-notes)
     - [Tips](#tips)
   - [2.2. Deploy MongoDB](#22-deploy-mongodb)
     - [Concepts](#concepts-1)
@@ -28,31 +26,36 @@ Proctor notes for The Azure Kubernetes Workshop, https://aksworkshop.io, supplem
   - [2.4 Deploy the frontend using Ingress](#24-deploy-the-frontend-using-ingress)
     - [Concepts](#concepts-3)
     - [Tasks](#tasks-1)
-  - [2.5 Monitoring](#25-monitoring)
+  - [2.5 Enable SSL/TLS on ingress](#25-enable-ssltls-on-ingress)
     - [Concepts](#concepts-4)
     - [Tasks](#tasks-2)
+      - [Order capture TLS Steps](#order-capture-tls-steps)
     - [Tips](#tips-3)
-    - [Resources](#resources)
-  - [2.6 Scaling](#26-scaling)
+  - [2.6 Monitoring](#26-monitoring)
     - [Concepts](#concepts-5)
     - [Tasks](#tasks-3)
     - [Tips](#tips-4)
-    - [Resources](#resources-1)
-  - [2.7 Create private highly available container registry](#27-create-private-highly-available-container-registry)
+    - [Resources](#resources)
+  - [2.7 Scaling](#27-scaling)
     - [Concepts](#concepts-6)
     - [Tasks](#tasks-4)
     - [Tips](#tips-5)
-    - [Resources](#resources-2)
-- [DevOps Tasks](#devops-tasks)
-  - [3.1 Continuous Integration and Continuous Delivery](#31-continuous-integration-and-continuous-delivery)
+    - [Resources](#resources-1)
+  - [2.8 Create private highly available container registry](#28-create-private-highly-available-container-registry)
     - [Concepts](#concepts-7)
     - [Tasks](#tasks-5)
     - [Tips](#tips-6)
-    - [Resources](#resources-3)
-  - [3.2 Package your app with Helm (DEPRECATED)](#32-package-your-app-with-helm-deprecated)
+    - [Resources](#resources-2)
+- [DevOps Tasks](#devops-tasks)
+  - [3.1 Continuous Integration and Continuous Delivery](#31-continuous-integration-and-continuous-delivery)
     - [Concepts](#concepts-8)
     - [Tasks](#tasks-6)
     - [Tips](#tips-7)
+    - [Resources](#resources-3)
+  - [3.2 Package your app with Helm (DEPRECATED)](#32-package-your-app-with-helm-deprecated)
+    - [Concepts](#concepts-9)
+    - [Tasks](#tasks-7)
+    - [Tips](#tips-8)
     - [Resources](#resources-4)
 - [Misc Notes](#misc-notes)
 
@@ -60,12 +63,11 @@ Proctor notes for The Azure Kubernetes Workshop, https://aksworkshop.io, supplem
 
 ## 1.1 Prerequisites
 
-### Azure subscription
-
-#### Solution notes
-
-1. The `az login...` command is not required if using Azure Shell. 
-1. One can also log in with the Azure account Username/Password provided.
+- Azure subscription
+  - The `az login...` command is not required if using Azure Shell. 
+  - One can also log in with the Azure account Username/Password provided.
+- Azure DevOps Organization account
+- GitHub account 
 
 ## 1.2 Kubernetes basics
 
@@ -104,7 +106,7 @@ Optional, at the discretion of the Emcee. More practical when there is one or mo
 - Visit https://docs.microsoft.com/en-us/azure/aks/kubernetes-walkthrough for step by step
 - Note that solution uses Azure CLI. Use Azure Shell or install the Azure CLI. PowerShell is an alternative.
 
-> Do not install with the cluster autoscaler preview, i.e. VMSSPreview. It takes longer to install and may  increase the liklihood of cluster failure during the workshop.
+> Do not install with the cluster autoscaler, i.e. with the `--enable-cluster-autoscaler` parameter. It takes longer to install and may  increase the liklihood of cluster failure during the workshop.
 
 |Step|Method|
 |--|--|
@@ -121,9 +123,23 @@ Optional, at the discretion of the Emcee. More practical when there is one or mo
 ### Tips
 
 1. Create a `aksworkshop` directory in your home dir (`~/`). Store code files here, e.g. K8s manifests.
-2. Add env vars to `.bashrc`.
+2. Add env vars to `.bashrc`
+```
+code ~/.bashrc
+// at the bottom of the .bashrc file, enter:
+export appid=<your sp client id>
+export objectid=<your sp object id>
+export subid=<your subscription id>
+export secret=<your sp password>
+export rgname=aksworkshop
+export region=eastus
+export aksname=aksworkshop
+export KUBE_EDITOR="nano"
+```
+
 3. Add `alias k=kubectl` to `.bashrc`.
-4. In Azure Shell use the `code` command to open a user-friendly  editor directly in Azure Shell (or use `vi` or `nano`, if you prefer).
+4. Refresh the shell: `source ~/.bashrc`
+5. In Azure Shell use the `code` command to open a user-friendly  editor directly in Azure Shell (or use `vi` or `nano`, if you prefer).
 
 ## 2.2. Deploy MongoDB
 
@@ -162,9 +178,7 @@ https://resources.azure.com/subscriptions/[SUBSCRIPTIONID]/resourceGroups/[RGNAM
 
 1. to verify `helm init`, run `helm version`, e.g.
     ```
-    michael@Azure:~$ helm version
-    Client: &version.Version{SemVer:"v2.13.1", GitCommit:"618447cbf203d147601b4b9bd7f8c37a5d39fbb4", GitTreeState:"clean"}
-    Server: &version.Version{SemVer:"v2.13.1", GitCommit:"618447cbf203d147601b4b9bd7f8c37a5d39fbb4", GitTreeState:"clean"}
+version.BuildInfo{Version:"v3.0.0", GitCommit:"e29ce2a54e96cd02ccfce88bee4f58bb6e2a28b6", GitTreeState:"clean", GoVersion:"go1.13.4"}
     ```
 
 1. If helm is already installed, and you get error messages like:
@@ -180,7 +194,42 @@ https://resources.azure.com/subscriptions/[SUBSCRIPTIONID]/resourceGroups/[RGNAM
     ```
     Then, the tiller pod is not ready. Give it some more time. Check with `helm version`.
 
-1. Verify Mongo by: 
+1. When Mongo helm chart completes, there will be output such as that below. Copy and paste this into a notepad, in case you need to reference it later.
+
+```
+michael@Azure:~$ helm install orders-mongo stable/mongodb --set mongodbUsername=orders-user,mongodbPassword=orders-password,mongodbDatabase=akschallenge
+NAME: orders-mongo
+LAST DEPLOYED: Wed Dec  4 14:37:32 2019
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+** Please be patient while the chart is being deployed **
+
+MongoDB can be accessed via port 27017 on the following DNS name from within your cluster:
+
+    orders-mongo-mongodb.default.svc.cluster.local
+
+To get the root password run:
+
+    export MONGODB_ROOT_PASSWORD=$(kubectl get secret --namespace default orders-mongo-mongodb -o jsonpath="{.data.mongodb-root-password}" | base64 --decode)
+
+To get the password for "orders-user" run:
+
+    export MONGODB_PASSWORD=$(kubectl get secret --namespace default orders-mongo-mongodb -o jsonpath="{.data.mongodb-password}" | base64 --decode)
+
+To connect to your database run the following command:
+
+    kubectl run --namespace default orders-mongo-mongodb-client --rm --tty -i --restart='Never' --image bitnami/mongodb --command -- mongo admin --host orders-mongo-mongodb --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD
+
+To connect to your database from outside the cluster execute the following commands:
+
+    kubectl port-forward --namespace default svc/orders-mongo-mongodb 27017:27017 &
+    mongo --host 127.0.0.1 --authenticationDatabase admin -p $MONGODB_ROOT_PASSWORD
+```    
+
+2. Verify Mongo by: 
 - run `kubectl get po` to validate that the pod is running. You should get a results like:
 ```
 NAME                                    READY   STATUS    RESTARTS   AGE
@@ -234,8 +283,7 @@ https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-read
 ### Tasks
 
 - Provision the captureorder deployment and expose a public endpoint
-    - Straight forward, but DON'T FORGET TO ENTER YOUR ENVIRONMENT VARIABLES IN `captureorder-deployment.yaml`!!
-- Ensure orders are successfully written to MongoDB
+    - Ensure orders are successfully written to MongoDB
     - The curl solution is not obvious. Let’s break it down 
 
 
@@ -261,6 +309,12 @@ For me: http://40.121.XXX.XXX/swagger/
     …note the /healthz path. This is coded in the application. Refer to:
 https://github.com/Azure/azch-captureorder/blob/1a4b34528882d9fb85a3d88246ddc53b74801f79/tests/default_test.go
 
+  I found that I needed to leave out the port. The result should be:
+
+  `i'm alive!`
+
+
+
 ### Tips
 
 1. `k get svc`
@@ -269,59 +323,121 @@ https://github.com/Azure/azch-captureorder/blob/1a4b34528882d9fb85a3d88246ddc53b
 
 ### Concepts
 
-- Ingress
-- HTTP application routing
-https://docs.microsoft.com/en-us/azure/aks/http-application-routing 
+- Ingress controller
+- Cluster IP service  
 
 ### Tasks
 
 - Deployment of app is straight forward
-- Use of HTTP Application Routing add-on for Ingress
-  - Application of K8s resource is straight forward
-  - Why this approach if not recommended for production use? 
+- Deployment of Ingress controller is also straight forward, but note...
 
-> Retrieve your cluster specific DNS zone name by running the command below”
+> Re: "ProTip: Place in the ingress controller in a different namespace". By following this practice, one can use the controller to route traffic across name spaces. There is a configurable setting in the Helm chart, controller.scope, that can limit the controller to a specific namespace, but it’s off by default. This tip is good to know, but not necessary.  
+  
 
-```
-michael@Azure:~/aksworkshop$ az aks show -g $RGNAME  -n $CLUSTERNAME --query addonProfiles.httpApplicationRouting.config.HTTPApplicationRoutingZoneName -o table
-Result
--------------------------------------
-0c2e4fa855404271be9c.eastus.aksapp.io
-```
-Open the front end app via:
-<http://frontend.0c2e4fa855404271be9c.eastus.aksapp.io/>
+> Note: Show and discuss the **Architecture diagram** that appears at the end of the task.
 
-## 2.5 Monitoring
+## 2.5 Enable SSL/TLS on ingress
 
 ### Concepts
 
-- Azure Monitor
+- cert-manager K8s add on
+- ClusterIssuer
 
 ### Tasks
 
-Straight forward
+- Straight forward for frontend. Order capture is a challenge. See notes below.
+- In cert-manager install there is a step to `Install the CustomResourceDefinition resources separately`. What is a CRD and why is it needed? [Custom resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) are extensions of the Kubernetes API. CustomResourceDefinition is an API resource allows you to define custom resources that can be served and handled by the K8s API. In the context of `cert-manager`, this is where the `cert-manager` API is defined. 
+
+#### Order capture TLS Steps
+
+- Repeat the work you did when creating the frontend ingress, but this time for the captureorder service, i.e. direct traffic via the ingress (create an second ingress object using YAML)
+- The hostname will need to be different, but still point at your ingress controller IP, e.g. orders.{ingress-ip}.nip.io. You must set up TLS for it as you did with the frontend.
+
+  `cp frontend-ingress-tls.yaml captureorder-ingress-tls.yaml`
+  `code captureorder-ingress-tls.yaml`
+  
+  Update as follows, and save:
+```
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: captureorder
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  tls:
+  - hosts:
+    - orders.23.96.4.79.nip.io
+    secretName: orders-tls-secret
+  rules:
+  - host: orders.23.96.4.79.nip.io
+    http:
+      paths:
+      - backend:
+          serviceName: captureorder
+          servicePort: 80
+        path: /
+```
+- Modify the CAPTUREORDERSERVICEIP environmental variable in the frontend deployment YAML. This now needs to refer to the hostname of your orders ingress, re-deploy the frontend to make the changes live.
+
+`cp frontend-deployment.yaml frontend-deployment-lb.yaml // backup the original deployment yaml` 
+
+`code frontend-deployment.yaml`
+
+```
+env:
+- name: CAPTUREORDERSERVICEIP
+  value: "orders.23.96.4.79.nip.io"  # Replace with your hostname of your orders ingress
+```
+### Tips
+
+Note: There is no need to update `captureorder-service.yaml`, but in the real-world you would delete the service since the use of the ingress controller is preferred. That said, you may not want to expose the service outside your cluster, in which case would a Cluster ID be sufficient?
+
+## 2.6 Monitoring
+
+### Concepts
+
+- Azure Monitor for containers
+- Azure Monitor
+- Log Analytics
+- ClusterRole & ClusterRoleBinding
+- Prometheus
+
+### Tasks
+
+- A **Log Analytics workspace** is a unique environment for Azure Monitor log data. Each workspace has its own data repository and configuration, and data sources and solutions are configured to store their data in a particular workspace.
+- Instructions around Log Analytics workspace set up are a bit confusing. If user is bringing their own subscription, they can check in Azure portal to see if there is an existing workspace they can use.
+- If you create a new workspace, navigate to it in Azure Portal.
+- We could have enabled the **AKS monitoring addon** when we created our cluster. You can [also enable](https://docs.microsoft.com/en-us/azure/azure-monitor/insights/container-insights-onboard) from  Azure Portal, ARM Template, etc.
+- In the Insights blade there is a message "Enable fast alerting experience on basic metrics for this Azure Kubernetes Services cluster". Click the Enable button.
+
+   
 
 ### Tips
 
-Coming soon
+- From [Troubleshooting link](https://github.com/Microsoft/OMS-docker/tree/ci_feature/Troubleshoot) in blade: 
+  > It may take some time to establish monitoring data flow for newly created clusters. Please allow at least 10-15 minutes for data to appear for your cluster.
+
+  **I found it took over 30 minutes to start seeing data!** Move user onto the Scaling task, and then come back to Monitoring.
 
 ### Resources
 
 - Another lab: <https://github.com/Azure/kubernetes-hackfest/blob/master/labs/monitoring-logging/README.md>
 - <https://kubernetes.io/docs/tasks/debug-application-cluster/resource-usage-monitoring/>
 
-## 2.6 Scaling
+## 2.7 Scaling
 
 ### Concepts
 
 - Azure Container Instances
+- Horizontal Pod Autoscaler
 
 ### Tasks
 
 - Run a baseline load test. Straight forward. My az command: 
 
     ```
-    az container create -g $RGNAME -n loadtest --image azch/loadtest --restart-policy Never -e SERVICE_IP=40.121.XXX.XXX
+    az container create -g $RGNAME -n loadtest --image azch/loadtest --restart-policy Never -e SERVICE_ENDPOINT=https://orders.23.96.4.79.nip.io/v1/order
     ```
     ```
     az container logs -g $RGNAME -n loadtest
@@ -367,7 +483,7 @@ Coming soon
 
 1. Another good resource is <https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/>. When you use the `az aks scale` command to scale down, AKS safely drains your nodes.
 
-## 2.7 Create private highly available container registry
+## 2.8 Create private highly available container registry
 
 ### Concepts
 
@@ -389,7 +505,7 @@ Coming soon
     - image:
     registry: <your unique reg name>.azurecr.io
     repository: captureorder
-    tag: ca
+    tag: ca1
     ```
     These will be used in the next step.
   - If you are running the `az acr build` command in a terminal (not Azure Shell), you may get the following error:
@@ -442,20 +558,10 @@ Pending
 
 ### Tasks
 
-- Create an Azure DevOps account
-- Create a project
-- Fork the source repositories on GitHub or import them to Azure Repos
-- Create build pipeline for the application Docker container
-  - The azure-pipelines.yml file is in the git repo, but its contents differ from the solution in the lab. Overwrite the repo file.
-- Build the code in azch-captureorder as a Docker image and push it to the Azure Container Registry you provisioned before
-  - The "Set up build" button may not appear in your screen. Navigate to Build pipelines from the left navigation menu.
-  - Click on the "Use the classic editor" link at the bottom of the "Where is your code?" list
-  - When adding Variables, in lieu of a service principal, you can  enable the **Admin user** in the ACR **Access keys** blade in Azure Portal.
-- Create a new Azure DevOps Repo, for example azch-captureorder-kubernetes to hold the YAML configuration for Kubernetes
-- Create build pipeline for the Kubernetes config files
-- Create a continuous deployment pipeline
-  - May need to show how to create an **Empty job**.
-  - May need to show how to enable the continuous deployment trigger.
+- Follow steps closely
+
+- There is a line in the instructions **Inspect the Deploy stage and edit the `imageRepository` variable** that is not clear. There is no `imageRepository`.
+
 - Verify everything works
 
 ### Tips
