@@ -52,10 +52,6 @@ Proctor notes for The Azure Kubernetes Workshop, https://aksworkshop.io, supplem
     - [Tasks](#tasks-6)
     - [Tips](#tips-7)
     - [Resources](#resources-3)
-  - [3.2 Package your app with Helm (DEPRECATED)](#32-package-your-app-with-helm-deprecated)
-    - [Concepts](#concepts-9)
-    - [Tasks](#tasks-7)
-    - [Tips](#tips-8)
     - [Resources](#resources-4)
 - [Misc Notes](#misc-notes)
 
@@ -73,8 +69,9 @@ Proctor notes for The Azure Kubernetes Workshop, https://aksworkshop.io, supplem
 
 Also point users to:
 
-- https://kubernetes.io/docs/home/
-- https://kubernetes.io/docs/tutorials/kubernetes-basics/
+- <https://kubernetes.io/docs/home/>
+- <https://kubernetes.io/docs/tutorials/kubernetes-basics/>
+- <https://azure.microsoft.com/en-us/topic/what-is-kubernetes/>
 
 ## 1.3 Application Overview
 
@@ -93,29 +90,31 @@ Optional, at the discretion of the Emcee. More practical when there is one or mo
 ### Concepts
 
 - Deployment methods, not just CLI and Portal (Azure Shell). Also, PowerShell, ARM, Terraform, Ansible
-- K8S versions and AKS cadence update (120 days behind as of 2019-04-05!)
+- K8S versions and AKS cadence update
+  - AKS aims to certify and release new Kubernetes versions within 30 days of an upstream release, subject to the stability of the release.
 - kubectl, the K8s CLI
 - Regions, verify that AKS is available in a given region and what versions are supported
-  - `az aks get-versions`
-- Service principal Add link to Resources
+  - `az aks get-versions -l eastus`
+- Service principal
 
 ### Solution notes
 
 > Deploy Kubernetes to Azure, using CLI or Azure portal using the latest Kubernetes version available in AKS
 
 - Visit https://docs.microsoft.com/en-us/azure/aks/kubernetes-walkthrough for step by step
-- Note that solution uses Azure CLI. Use Azure Shell or install the Azure CLI. PowerShell is an alternative.
+- Note that solutions use Azure Shell. You can use Azure CLI on your lap top (install the Azure CLI). PowerShell is an alternative, if you want to be difficult ;>).
+  - Open Azure Shell in a new browser tab using the URL <https://shell.azure.com>. When you connect for the first time, you will need to configure a storage account. This is needed for file persistence.
 
 > Do not install with the cluster autoscaler, i.e. with the `--enable-cluster-autoscaler` parameter. It takes longer to install and may  increase the liklihood of cluster failure during the workshop.
 
 |Step|Method|
 |--|--|
 |SSH Key|If using your own Azure subscription, you can use your own SSH key, and not use the `--generate-ssh-keys` option in the `az create aks` command. Instead, use the `--ssh-key-value /path` option.|
-|Set env variables used in the lab|Resource Group, Location, Cluster name|
-|Create resource group|`az group create --name $RGNAME --location $LOCATION` **IMPORTANT**: If you have been given access to a subscription as part of a lab, an RG has probably been provisioned (e.g. ODL-k8s-68593). You will see this in Azure Portal. If so, use this RG instead of `akschallenge`. Note the location of the RG.|
-|Get V8s versions for my region|az aks get-versions --location $LOCATION -o table|
-|Create AKS cluster|`az aks create --resource-group $RGNAME --name  $CLUSTERNAME --enable-addons monitoring --kubernetes-version 1.12.6 --generate-ssh-keys --location $LOCATION --service-principal $APPID --client-secret $CLIENTSECRET`|
-|Get Cluster creds|`az aks get-credentials -g $RGNAME -n $CLUSTERNAME`|
+|Set env variables used in the lab|Resource Group, Location, Cluster name. See tip below.|
+|Create resource group|`az group create --name $resource-group --location $region` **IMPORTANT**: If you have been given access to a subscription as part of a lab, an RG has probably been provisioned (e.g. ODL-k8s-68593). You will see this in Azure Portal. If so, use this RG instead of `akschallenge`. Note the location of the RG.|
+|Get V8s versions for my region|az aks get-versions --location $region -o table|
+|Create AKS cluster|`az aks create --resource-group $resource-group --name  $aksname --enable-addons monitoring --kubernetes-version 1.12.6 --generate-ssh-keys --location $region --service-principal $APP_ID --client-secret $APP_SECRET`|
+|Get Cluster creds|`az aks get-credentials -g $resource-group -n $aksname`|
 |Verify cluster access|`kubectl get nodes`|
 
 > Cluster creds are stored in `~/.kube/config`. Open the files with `code ~/.kube/config`. Look for current context.
@@ -127,11 +126,11 @@ Optional, at the discretion of the Emcee. More practical when there is one or mo
 ```
 code ~/.bashrc
 // at the bottom of the .bashrc file, enter:
-export appid=<your sp client id>
+export APP_ID=<your sp client id>
 export objectid=<your sp object id>
 export subid=<your subscription id>
-export secret=<your sp password>
-export rgname=aksworkshop
+export APP_SECRET=<your sp password>
+export resource-group=aksworkshop
 export region=eastus
 export aksname=aksworkshop
 export KUBE_EDITOR="nano"
@@ -145,7 +144,7 @@ export KUBE_EDITOR="nano"
 
 ### Concepts
 - Helm
- -ConfigMap as in
+- ConfigMap as in
 https://github.com/helm/charts/blob/master/stable/mongodb/templates/configmap.yaml
  - Secrets as in 
 https://github.com/helm/charts/blob/master/stable/mongodb/templates/secrets.yaml 
@@ -165,7 +164,7 @@ Note, if a database does not exist, MongoDB creates the database when you first 
 ### Tips
 
 1. To Check if a cluster is RBAC enabled, visit https://resources.azure.com/ and drill down, e.g.  
-https://resources.azure.com/subscriptions/[SUBSCRIPTIONID]/resourceGroups/[RGNAME]/providers/Microsoft.ContainerService/managedClusters/[CLUSTERNAME]
+https://resources.azure.com/subscriptions/[SUBSCRIPTIONID]/resourceGroups/[resource-group]/providers/Microsoft.ContainerService/managedClusters/[aksname]
 
     In my case, I see:
 
@@ -176,19 +175,21 @@ https://resources.azure.com/subscriptions/[SUBSCRIPTIONID]/resourceGroups/[RGNAM
         "networkPlugin": "kubenet",
     ```
 
-1. to verify `helm init`, run `helm version`, e.g.
+1. to verify `helm`, run `helm version`, e.g.
     ```
-version.BuildInfo{Version:"v3.0.0", GitCommit:"e29ce2a54e96cd02ccfce88bee4f58bb6e2a28b6", GitTreeState:"clean", GoVersion:"go1.13.4"}
+    version.BuildInfo{Version:"v3.0.0", GitCommit:"e29ce2a54e96cd02ccfce88bee4f58bb6e2a28b6", GitTreeState:"clean", GoVersion:"go1.13.4"}
     ```
 
-1. If helm is already installed, and you get error messages like:
+1. APPLIES TO HELM v2 ONLY! If helm is already installed, and you get error messages like:
    
     ```
     Error: release orders-mongo failed: namespaces "default" is forbidden: User "system:serviceaccount:kube-system:default" cannot get resource "namespaces" in API group "" in the namespace "default"
     ```
-    Then run: `helm init --service-account tiller --upgrade`
+    run: `helm init --service-account tiller --upgrade`
+    
+    
 
-1. If you get error:
+1. APPLIES TO HELM v2 ONLY! If you get error:
     ```
     Error: could not find a ready tiller pod
     ```
@@ -267,7 +268,7 @@ For interactive help, type "help".
 
     ... Which in turn are passed on docker run during helm chart installation. (See https://github.com/bitnami/bitnami-docker-mongodb/blob/master/README.md#creating-a-user-and-database-on-first-run) 
 
-    This is why they are passed on the command line.
+    This is why they are passed on the `helm install` command line.
 
     Alternatively, can a secret be used? How would that be done?
 
@@ -284,8 +285,7 @@ https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-read
 
 - Provision the captureorder deployment and expose a public endpoint
     - Ensure orders are successfully written to MongoDB
-    - The curl solution is not obvious. Let’s break it down 
-
+    - The curl solution is not obvious. Let’s break it down:
 
     ```
     curl -d '{"EmailAddress": "mike@snp.com", "Product": "prod-1", "Total": 100}' -H "Content-Type: application/json" -X POST http://40.121.XXX.XXX/v1/order
@@ -307,17 +307,15 @@ For me: http://40.121.XXX.XXX/swagger/
     > The Order Capture API exposes the following endpoint for health-checks: http://[PublicEndpoint]:[port]/healthz”...
 
     …note the /healthz path. This is coded in the application. Refer to:
-https://github.com/Azure/azch-captureorder/blob/1a4b34528882d9fb85a3d88246ddc53b74801f79/tests/default_test.go
+<https://github.com/Azure/azch-captureorder/blob/1a4b34528882d9fb85a3d88246ddc53b74801f79/tests/default_test.go#L23>
 
-  I found that I needed to leave out the port. The result should be:
+  I found that I needed to leave out the port. The browser output should be:
 
   `i'm alive!`
 
-
-
 ### Tips
 
-1. `k get svc`
+1. `k get svc` // to list k8s service resources
 
 ## 2.4 Deploy the frontend using Ingress
 
@@ -437,13 +435,13 @@ Note: There is no need to update `captureorder-service.yaml`, but in the real-wo
 - Run a baseline load test. Straight forward. My az command: 
 
     ```
-    az container create -g $RGNAME -n loadtest --image azch/loadtest --restart-policy Never -e SERVICE_ENDPOINT=https://orders.23.96.4.79.nip.io/v1/order
+    az container create -g $resource-group -n loadtest --image azch/loadtest --restart-policy Never -e SERVICE_ENDPOINT=https://orders.23.96.4.79.nip.io/v1/order
     ```
     ```
-    az container logs -g $RGNAME -n loadtest
+    az container logs -g $resource-group -n loadtest
     ```
     ```
-    az container delete -g $RGNAME -n loadtest
+    az container delete -g $resource-group -n loadtest
     ```
 - Create Horizontal Pod Autoscaler.
   - The **Important** note in the solution requires edits to captureorder-deployment.yaml to remove the explicit `replicas: 2` count. There is also an instruction to define resource requests and resource limits. This is included in `captureorder-deployment.yaml`:
@@ -572,25 +570,6 @@ Pending
 
 ### Resources
 
-## 3.2 Package your app with Helm (DEPRECATED)
-
-### Concepts
-
-- Helm
-
-### Tasks
-
-- Package your app as a Helm chart
-  - `helm init` Or `helm version` to check if helm is running
-- Reconfigure the build pipeline for `azch-captureorder-kubernetes`
-  - Change from `yaml` to `helm`. Remember to change this back to test from a yaml update.
-- Deploying it again using Helm
-
-The tasks are pretty straight forward.
-
-### Tips
-
-Pending
 
 ### Resources
 
@@ -617,12 +596,12 @@ Pending
     
     Get list of upgrades:
     ```
-    az aks get-upgrades -g $RGNAME -n $CLUSTERNAME  --output table
+    az aks get-upgrades -g $resource-group -n $aksname  --output table
     Name     ResourceGroup    MasterVersion    NodePoolVersion    Upgrades
     default  rgmike20190405   1.12.6           1.12.6             1.12.7
     ```
     ```
-    michael@Azure:~$ az aks upgrade -g $RGNAME -n $CLUSTERNAME --kubernetes-version 1.12.7
+    michael@Azure:~$ az aks upgrade -g $resource-group -n $aksname --kubernetes-version 1.12.7
     Kubernetes may be unavailable during cluster upgrades.
     Are you sure you want to perform this operation? (y/n): y
     - Running ..
